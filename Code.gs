@@ -23,11 +23,28 @@ function getAndPassColumnAData() {
 
   return columnAData;
 }
-
+// to be further optimized
 function saveQRCodeToDrive(svgData) {
-  
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(); // Modify this to target a specific sheet
+
   var folderName = "QR Codes";
-  var fileName = "qr_code.svg";
+  // to be made: tentative for loop to get range from B to G, then check if B has value and G has none; True: fileName = columnB.value + ".svg", False: Skip
+  
+  // to be made: tentative for loop to get range from B to G, then check if B has value and G has none; True: fileName = columnB.value + ".svg", False: Skip
+  var fileName; // Change static filename.svg to get column B from sheets if column G is empty
+
+  var columnB = sheet.getRange("B:B").getValues(); // Get all values in column B
+  var columnG = sheet.getRange("G:G").getValues(); // Get all values in column G
+
+  for (var i = 1; i < columnB.length; i++) {
+    var cellB = columnB[i][0];
+    var cellG = columnG[i][0];
+    
+    if (cellB && !cellG) { // If column B has a value and column G is empty
+      fileName = cellB + ".svg";
+      break; // Exit the loop once a matching row is found
+    }
+  }
   
   try {
     // Get the folder by name or create it if it doesn't exist

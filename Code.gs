@@ -4,27 +4,27 @@ function doGet() {
 }
 
 function saveQRCodeToDrive(svgData) {
-  var folderName = "QR Codes";
+  var folderName = "QR Codes"; // variable for foldername
   
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var data = sheet.getRange("A:B").getValues();
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(); // get active spreadsheet
+    var data = sheet.getRange("A:B").getValues(); //getting range from column a - b
     
-    for (var i = 1; i < data.length; i++) {
-      var cellB = data[i][1];
+    for (var i = 1; i < data.length; i++) { // looping iteration for getting each row
+      var cellB = data[i][1]; // setting current row - column as cellB
 
       if (cellB) { // Check if column B has a value
         var filenameFromColumnB = cellB + ".svg"; // Use column B value as filename
-        var folders = DriveApp.getFoldersByName(folderName);
+        var folders = DriveApp.getFoldersByName(folderName); //appending foldername
         var folder;
 
-        if (folders.hasNext()) {
-          folder = folders.next();
-        } else {
-          folder = DriveApp.createFolder(folderName);
+        if (folders.hasNext()) { // if there is a folder with the name from variable folderName
+          folder = folders.next(); // open the folder and perform operation
+        } else { // else
+          folder = DriveApp.createFolder(folderName); // create a folder with the folder name
         }
 
-        var qrCodeBlob = Utilities.newBlob(svgData, "image/svg+xml", filenameFromColumnB);
+        var qrCodeBlob = Utilities.newBlob(svgData, "image/svg+xml", filenameFromColumnB); // passing the folder name from column B
         var file = folder.createFile(qrCodeBlob);
 
         // Set sharing permissions

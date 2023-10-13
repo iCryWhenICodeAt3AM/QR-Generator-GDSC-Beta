@@ -8,14 +8,15 @@
 <body>
 <div id="canvas"></div>
 <script type="text/javascript">
+
     const qrCode = new QRCodeStyling({
         width: 300,
         height: 300,
         type: "svg",
-        data: "<?= data[0] ?>",
-        image: "https://i.ibb.co/ZzBFw8k/birb.png",
+        data: "Lloyd Mark",
+        image: "birb.svg",
         dotsOptions: {
-            color: "#000000",
+            color: "#2575e1",
             type: "rounded"
         },
         backgroundOptions: {
@@ -28,23 +29,7 @@
     });
 
     qrCode.append(document.getElementById("canvas"));
-
-    // Automatically save the QR code to Google Drive when the page loads
-    window.onload = function() {
-        const svgElement = document.querySelector("#canvas svg");
-        if (svgElement) {
-            const qrCodeSVG = new XMLSerializer().serializeToString(svgElement);
-
-            // Send the SVG data to the server-side function
-            google.script.run.withSuccessHandler(onSavedToDrive).saveQRCodeToDrive(qrCodeSVG);
-        } else {
-            alert("QR code not found. Please generate the QR code first.");
-        }
-    }
-
-    function onSavedToDrive(fileName) {
-        alert("QR code saved to Google Drive as " + fileName);
-    }
+    qrCode.download({ name: "qr", extension: "svg" });
 </script>
 </body>
 </html>

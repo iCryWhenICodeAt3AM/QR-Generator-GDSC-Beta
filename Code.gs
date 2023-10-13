@@ -28,9 +28,8 @@ function saveQRCodeToDrive(svgData) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(); // Modify this to target a specific sheet
 
   var folderName = "QR Codes";
-  // to be made: tentative for loop to get range from B to G, then check if B has value and G has none; True: fileName = columnB.value + ".svg", False: Skip
-  
-  // to be made: tentative for loop to get range from B to G, then check if B has value and G has none; True: fileName = columnB.value + ".svg", False: Skip
+
+  // to be made: tentative for loop to get range from B to G, then check if B has value and G has none; True: fileName = columnB.value + ".svg", False: Skip ----- FIXED
   var fileName; // Change static filename.svg to get column B from sheets if column G is empty
 
   var columnB = sheet.getRange("B:B").getValues(); // Get all values in column B

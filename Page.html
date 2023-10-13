@@ -8,30 +8,57 @@
 <body>
 <div id="canvas"></div>
 <script type="text/javascript">
-    const qrCode = new QRCodeStyling({
-        width: 300,
-        height: 300,
-        type: "svg",
-        data: "<?= data[0] ?>",
-        image: "https://i.ibb.co/ZzBFw8k/birb.png",
-        dotsOptions: {
-            color: "#000000",
-            type: "rounded"
-        },
-        backgroundOptions: {
-            color: "#ffffff",
-        },
-        imageOptions: {
-            crossOrigin: "anonymous",
-            margin: 10
-        }
-    });
+    // Assuming `data` is an array containing values for column B
+    const data = ["Item1", "Item2", "Item3"]; // Replace with your actual data
 
-    qrCode.append(document.getElementById("canvas"));
+    // Loop through the data and generate QR codes
+    data.forEach(generateQRCode);
 
-    // Automatically save the QR code to Google Drive when the page loads
-    window.onload = function() {
-        const svgElement = document.querySelector("#canvas svg");
+    function generateQRCode(item) {
+        const qrCode = new QRCodeStyling({
+            width: 300,
+            height: 300,
+            type: "svg",
+            data: item,
+            image: "https://i.ibb.co/ZzBFw8k/birb.png",
+            dotsOptions: {
+                color: "#2575e1",
+                type: "rounded"
+            },
+            backgroundOptions: {
+                color: "#ffffff",
+            },
+            imageOptions: {
+                crossOrigin: "anonymous",
+                margin: 10
+            }
+        });
+
+        // Create a container for each QR code
+        const container = document.createElement("div");
+        container.appendChild(document.createTextNode("Item: " + item)); // Display item information
+        container.appendChild(document.createElement("br"));
+        container.appendChild(document.createElement("br"));
+
+        // Append the QR code to the container
+        qrCode.append(container);
+
+        // Add a button to save each QR code to Google Drive
+        const saveButton = document.createElement("button");
+        saveButton.innerText = "Save to Drive";
+        saveButton.addEventListener("click", function() {
+            saveQRCodeToDrive(qrCode);
+        });
+
+        container.appendChild(saveButton);
+
+        // Append the container to the body
+        document.body.appendChild(container);
+    }
+
+    function saveQRCodeToDrive(qrCode) {
+        const svgElement = qrCode._el.container.firstChild; // Get the SVG element from the QR code container
+
         if (svgElement) {
             const qrCodeSVG = new XMLSerializer().serializeToString(svgElement);
 
@@ -42,8 +69,8 @@
         }
     }
 
-    function onSavedToDrive(fileName) {
-        alert("QR code saved to Google Drive as " + fileName);
+    function onSavedToDrive(filenameFromColumnB) {
+        alert("QR code saved to Google Drive as " + filenameFromColumnB);
     }
 </script>
 </body>

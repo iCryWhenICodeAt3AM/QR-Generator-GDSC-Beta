@@ -16,7 +16,6 @@
         justify-content: center;
         align-items: center;
         height: 100vh; /* Optionally, set the desired height */
-        border: 4px solid red; /* Set the initial border color to red */
       }
     </style>
 </head>
@@ -24,24 +23,37 @@
    <h1 id="message"></h1>
     <div id="canvas"></div>
     <script type="text/javascript">
+    // page onLoad preparation
     google.script.run.withSuccessHandler(() => generateQR(counter)).doGet();
-
-    function waitForCanvasToLoad(callback) {
-        var interval = setInterval(function() {
-            var canvasElement = document.querySelector("#canvas canvas");
-            if (canvasElement) {
-                clearInterval(interval); // Stop checking
-                callback(canvasElement);
-            }
-        }, 100); // Check every 100 milliseconds
-    }
 
     let counter = 0;
     let data = "<?= data ?>";
-    const dataArray = data.split(",");
+    // Split the input into an array
+    var pairs = data.split(',');
 
-    function generateQR(number) {
-      $('#message').text("SAVING TO DRIVE...");
+    // Create an array of objects for Name and Code pairs
+    var dataArray = [];
+
+    for (var i = 0; i < pairs.length; i += 3) {
+        var name = pairs[i];
+        var code = pairs[i + 1];
+        var row = pairs[i + 2];
+        dataArray.push({ Name: name, Code: code, Row: row });
+    }
+
+    function waitForCanvasToLoad(callback) {
+          var interval = setInterval(function() {
+              var canvasElement = document.querySelector("#canvas canvas");
+              if (canvasElement) {
+                  clearInterval(interval); // Stop checking
+                  callback(canvasElement);
+              }
+          }, 100); // Check every 100 milliseconds
+      }
+
+
+    function generateQR() {
+      $('#message').text("SAVING TO DRIVE AS "+dataArray[counter].Name);
       $('#canvas').css('border-color', 'red');
       $('#canvas').empty();
       // console.log(dataArray);
@@ -49,11 +61,17 @@
         width: 600,
         height: 600,
         type: "canvas",
-        data: dataArray[number], // Use the counter to dynamically access data
+        data: ""+dataArray[counter].Code, // Use the counter to dynamically access data
         image: "https://i.ibb.co/ZzBFw8k/birb.png",
         dotsOptions: {
           color: "#000000",
-          type: "rounded"
+          type: "dots"
+        },
+        cornersSquareOptions:{
+            type:"square"
+        },
+        cornersDotOptions:{
+            type:"square"
         },
         backgroundOptions: {
           color: "#ffffff",
@@ -61,8 +79,15 @@
         imageOptions: {
           crossOrigin: "anonymous",
           margin: 10
-        }
-        
+        },
+        cornersSquareOptions:{
+            type:"extra-rounded",
+            color:"#000000"
+          },
+        // imageOptions:{
+        //     imageSize:0.6,
+        //     margin:0
+        //   }
       });
 
       qrCode.append(document.getElementById("canvas"));
@@ -75,23 +100,20 @@
             // The rest of your code
             google.script.run.withSuccessHandler(function(fileName) {
             // Change the border color to green on success
-            $('#canvas').css('border-color', 'green');
-            $('#message').text("Saved to Drive as "+fileName);
             generateNextQR();
         }).withFailureHandler(function(error) {
             // Display an alert with the error message
-            $('#message').text("SAVED TO DRIVE AS "+fileName);
+            $('#message').text("ERROR SAVING: "+error);
             alert("Error saving QR code to Drive: " + error);
-        }).saveQRCodeToDrive(img);
+        }).saveQRCodeToDrive(img, dataArray[counter].Name, dataArray[counter].Row);
         } else {
             alert("QR code not found. Please generate the QR code first.");
         }
     }
   
     function generateNextQR() {
-      
       counter++;
-      google.script.run.withSuccessHandler(() => generateQR(counter)).doGet();
+      generateQR();
     }
     </script>
 </body>

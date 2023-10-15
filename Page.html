@@ -25,11 +25,12 @@
     <script type="text/javascript">
     // page onLoad preparation
     google.script.run.withSuccessHandler(() => generateQR(counter)).doGet();
-
     let counter = 0;
     let data = "<?= data ?>";
     // Split the input into an array
     var pairs = data.split(',');
+    var qrSaves = [];
+
 
     // Create an array of objects for Name and Code pairs
     var dataArray = [];
@@ -43,10 +44,10 @@
 
     function waitForCanvasToLoad(callback) {
           var interval = setInterval(function() {
-              var canvasElement = document.querySelector("#canvas canvas");
+              var canvasElement = document.querySelector("canvas");
               if (canvasElement) {
                   clearInterval(interval); // Stop checking
-                  callback(canvasElement);
+                  callback(canvasElement.toDataURL('image/png'));
               }
           }, 100); // Check every 100 milliseconds
       }
@@ -58,20 +59,21 @@
       $('#canvas').empty();
       // console.log(dataArray);
       const qrCode = new QRCodeStyling({
-        width: 600,
-        height: 600,
+        width: 2000,
+        height: 2000,
         type: "canvas",
         data: ""+dataArray[counter].Code, // Use the counter to dynamically access data
         image: "https://i.ibb.co/ZzBFw8k/birb.png",
         dotsOptions: {
           color: "#000000",
-          type: "dots"
+          type: "dots",
+          errorCorrectionLevel: 'L'
         },
         cornersSquareOptions:{
-            type:"square"
+            type:"extra-rounded"
         },
         cornersDotOptions:{
-            type:"square"
+            type:"dot"
         },
         backgroundOptions: {
           color: "#ffffff",
@@ -95,25 +97,20 @@
     }
 
     function passQRToSave(canvasElement) {
-        if (canvasElement) {
-            var img = canvasElement.toDataURL('image/png');
-            // The rest of your code
-            google.script.run.withSuccessHandler(function(fileName) {
-            // Change the border color to green on success
-            generateNextQR();
-        }).withFailureHandler(function(error) {
-            // Display an alert with the error message
-            $('#message').text("ERROR SAVING: "+error);
-            alert("Error saving QR code to Drive: " + error);
-        }).saveQRCodeToDrive(img, dataArray[counter].Name, dataArray[counter].Row);
-        } else {
-            alert("QR code not found. Please generate the QR code first.");
-        }
+        qrSaves.push({Canvas: canvasElement, Name: dataArray[counter].Name, Row: dataArray[counter].Row});
+        generateNextQR();
+
     }
   
     function generateNextQR() {
-      counter++;
-      generateQR();
+      if (counter < dataArray.length-1) {
+        counter++;
+        generateQR();
+      } else {
+        console.log(qrSaves);
+        var foldername = "QR Save 1";
+        google.script.run.saveToDrive(foldername, qrSaves);
+      }
     }
     </script>
 </body>

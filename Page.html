@@ -4,32 +4,143 @@
     <meta charset="UTF-8">
     <title>QR Code Styling</title>
     <script type="text/javascript" src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      #message{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #canvas {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh; /* Optionally, set the desired height */
+      }
+    </style>
 </head>
 <body>
-<div id="canvas"></div>
-<script type="text/javascript">
+   <h1 id="message"></h1>
+    <div id="canvas"></div>
+    <script type="text/javascript">
+    // page onLoad preparation
+    google.script.run.withSuccessHandler(() => generateQR(counter)).doGet();
+    let counter = 0;
+    let data = "<?= data ?>";
+    // Split the input into an array
+    var pairs = data.split(',');
+    var qrSaves = [];
 
-    const qrCode = new QRCodeStyling({
-        width: 300,
-        height: 300,
-        type: "svg",
-        data: "Lloyd Mark",
-        image: "birb.svg",
+
+    // Create an array of objects for Name and Code pairs
+    var dataArray = [];
+
+    for (var i = 0; i < pairs.length; i += 3) {
+        var name = pairs[i];
+        var code = pairs[i + 1];
+        var row = pairs[i + 2];
+        dataArray.push({ Name: name, Code: code, Row: row });
+    }
+
+    function waitForCanvasToLoad(callback) {
+          var interval = setInterval(function() {
+              var canvasElement = document.querySelector("canvas");
+              if (canvasElement) {
+                  clearInterval(interval); // Stop checking
+                  callback(canvasElement.toDataURL('image/png'));
+              }
+          }, 100); // Check every 100 milliseconds
+      }
+
+
+    function generateQR() {
+      $('#message').text("SAVING TO DRIVE AS "+dataArray[counter].Name);
+      $('#canvas').css('border-color', 'red');
+      $('#canvas').empty();
+      // console.log(dataArray);
+      const qrCode = new QRCodeStyling({
+        width: 2000,
+        height: 2000,
+        type: "canvas",
+        data: ""+dataArray[counter].Code, // Use the counter to dynamically access data
+        image: "https://i.ibb.co/ZzBFw8k/birb.png",
         dotsOptions: {
-            color: "#2575e1",
-            type: "rounded"
+          color: "#000000",
+          type: "dots",
+          errorCorrectionLevel: 'L'
+        },
+        cornersSquareOptions:{
+            type:"extra-rounded"
+        },
+        cornersDotOptions:{
+            type:"dot"
         },
         backgroundOptions: {
-            color: "#ffffff",
+          color: "#ffffff",
         },
         imageOptions: {
-            crossOrigin: "anonymous",
-            margin: 10
-        }
-    });
+          crossOrigin: "anonymous",
+          margin: 10
+        },
+        cornersSquareOptions:{
+            type:"extra-rounded",
+            color:"#000000"
+          },
+        // imageOptions:{
+        //     imageSize:0.6,
+        //     margin:0
+        //   }
+      });
 
-    qrCode.append(document.getElementById("canvas"));
-    qrCode.download({ name: "qr", extension: "svg" });
-</script>
+      qrCode.append(document.getElementById("canvas"));
+      waitForCanvasToLoad(passQRToSave);
+    }
+
+    function passQRToSave(canvasElement) {
+        qrSaves.push({Canvas: canvasElement, Name: dataArray[counter].Name, Row: dataArray[counter].Row});
+        generateNextQR();
+
+    }
+  
+    function generateNextQR() {
+      if (counter < dataArray.length-1) {
+        counter++;
+        generateQR();
+      } else {
+        console.log(qrSaves);
+        var foldername = "GDSC SAVE QR";
+        processBatches(foldername);
+      }
+    }
+    
+    // Define the maximum batch size
+    const maxBatchSize = 80;
+    let qrSavesIndex = 0; // Keep track of the current index
+
+    function processBatches(foldername) {
+      const batchSize = Math.min(maxBatchSize, qrSaves.length - qrSavesIndex);
+      const batch = qrSaves.slice(qrSavesIndex, qrSavesIndex + batchSize);
+
+      if (batch.length > 0) {
+        google.script.run
+          .withSuccessHandler(() => {
+            // Batch successfully processed
+            qrSavesIndex += batchSize; // Update the current index
+            processBatches(foldername); // Continue with the next batch
+          })
+          .saveToDrive(foldername, batch);
+      } else {
+        // All elements have been processed
+        console.log("All elements in qrSaves have been used.");
+      }
+    }
+
+    console.log(qrSaves);
+    var foldername = "GDSC SAVE QR";
+
+    // Start processing batches
+    processBatches(foldername);
+
+    </script>
 </body>
 </html>

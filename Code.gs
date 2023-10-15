@@ -1,100 +1,80 @@
+var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1"); // Replace with your sheet name
+var qrCodeImages = [];
+
 function doGet() {
-  Logger.log("Do Get");
   var columnAData = getAndPassColumnAData();
   // Create HTML output with data
   var htmlOutput = HtmlService.createTemplateFromFile('Page');
+  htmlOutput.array = qrCodeImages;
   htmlOutput.data = columnAData;
-
   return htmlOutput.evaluate().setTitle('QR Code Web App');
 }
 
 function getAndPassColumnAData() {
-  Logger.log("Get And Pass Column A Data");
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1"); // Replace with your sheet name
+  var cellB = sheet.getRange("B:B").getValues(); // Get all values in column B
   var data = sheet.getRange("F:G").getValues();
   var columnAData = [];
   
   for (var i = 1; i < data.length; i++) { // Assuming the first row is headers
-    var cellA = data[i][0];
-    var cellB = data[i][1];
+    var cellF = data[i][0];
+    var cellG = data[i][1];
     
-    if (cellA && !cellB) { // If column A is not empty and column B is empty
-      columnAData.push(cellA);
+    if (cellF && !cellG) { // If column A is not empty and column B is empty
+      var pair = []
+      pair.push(cellB[i], cellF, i + 1);
+      columnAData.push(pair);
     }
   }
-
   return columnAData;
 }
 
-// to be further optimized
-function saveQRCodeToDrive(img) {
-  Logger.log("Save QR Code To Drive");
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(); // Modify this to target a specific sheet
+////////
+function checkFolder(folderName){ // to prepare folder
+  var folders = DriveApp.getFoldersByName(folderName);
 
-  var folderName = "QR Codes";
-  // to be made: tentative for loop to get range from B to G, then check if B has value and G has none; True: fileName = columnB.value + ".svg", False: Skip
-  
-  // to be made: tentative for loop to get range from B to G, then check if B has value and G has none; True: fileName = columnB.value + ".png", False: Skip
-  var fileName; // Change static filename.svg to get column B from sheets if column G is empty
-
-  var columnB = sheet.getRange("B:B").getValues(); // Get all values in column B
-  var columnG = sheet.getRange("G:G").getValues(); // Get all values in column G
-
-  for (var i = 1; i < columnB.length; i++) {
-    var cellB = columnB[i][0];
-    var cellG = columnG[i][0];
-    
-    if (cellB && !cellG) { // If column B has a value and column G is empty
-      fileName = cellB + ".png"; // Change the file extension to .png
-      break; // Exit the loop once a matching row is found
-    }
-  }
-
-  try {
-    // Get the folder by name or create it if it doesn't exist
-    var folders = DriveApp.getFoldersByName(folderName);
-    var folder;
-    
-    if (folders.hasNext()) {
+  if (folders.hasNext()) {
       folder = folders.next();
     } else {
       folder = DriveApp.createFolder(folderName);
     }
-    
-    // const canvas = document.getElementById('canvas');
-    // const img = canvas.toDataURL('image/png');
-    var imgData = img.split(',')[1]; // Extract the base64 image data from the URL
+  return folder;
+}
 
-    // Convert the base64 image data to bytes
-    var bytes = Utilities.base64Decode(imgData);
+function generateFile(qrArray) {
+  try {
+    var newQRArray = qrArray;
+    var qrCodeImages = []; // Define a local array for this function
 
-    var qrCodeBlob = Utilities.newBlob(bytes, 'image/png', fileName);
-    
-    var file = folder.createFile(qrCodeBlob);
-    
-    // Set sharing permissions
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    
-    // Find the row with data in column A but no data in column B
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet(); // Modify this to target a specific sheet
-    var data = sheet.getRange("F:G").getValues();
-    
-    for (var i = 1; i < data.length; i++) { // Assuming the first row is headers
-      var cellA = data[i][0];
-      var cellB = data[i][1];
-      
-      if (cellA && !cellB) { // If column A is not empty and column B is empty
-        var rowIndex = i + 1; // Adding 1 to account for 0-based indexing
-        // Mark the current row as "Done" in column G
-        sheet.getRange(rowIndex, 7).setValue("Done");
-        break; // Exit the loop once a matching row is found
-      }
+    for (var i = 0; i < newQRArray.length; i++) {
+      var qrCodeBlob = Utilities.newBlob(
+        Utilities.base64Decode(newQRArray[i].Canvas.split(',')[1]),
+        'image/png',
+        newQRArray[i].Name+".png"
+      );
+
+      qrCodeImages.push({ Image: qrCodeBlob, Row: newQRArray[i].Row });
     }
-
-    return fileName;
+    
+    return qrCodeImages; // Return the local array
   } catch (error) {
-    return "Error: " + error.toString();
+    throw new Error("Error creating files: " + error.toString());
   }
 }
 
+function upload(folder, qrCodeImages){
+  
+  for (var i = 0; i < qrCodeImages.length; i++) {
+      var qrCode = qrCodeImages[i].Image;
+      var file = folder.createFile(qrCode);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      sheet.getRange(qrCodeImages[i].Row, 7).setValue("DONE"); //Mark as Done
+    }
+}
 
+async function saveToDrive(folderName, qrArray){ // to save to drive
+  var folderName = folderName;
+  var qrCodeImages = qrCodeImages;
+  var folder = checkFolder(folderName); // to prepare folder
+  var qrCodeImages = generateFile(qrArray);
+  upload(folder, qrCodeImages);
+}

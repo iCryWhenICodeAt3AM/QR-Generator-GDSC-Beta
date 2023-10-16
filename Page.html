@@ -20,28 +20,41 @@
     </style>
 </head>
 <body>
+  
+    <button id="generateQRButton">Generate QR Codes</button> <!-- Button to trigger QR code generation -->
    <h1 id="message"></h1>
-    <div id="canvas"></div>
+    <div id="canvas"></div>///
     <script type="text/javascript">
     // page onLoad preparation
-    google.script.run.withSuccessHandler(() => generateQR(counter)).doGet();
     let counter = 0;
-    let data = "<?= data ?>";
-    // Split the input into an array
-    var pairs = data.split(',');
+    let data;
     var qrSaves = [];
-
-
-    // Create an array of objects for Name and Code pairs
     var dataArray = [];
 
-    for (var i = 0; i < pairs.length; i += 3) {
-        var name = pairs[i];
-        var code = pairs[i + 1];
-        var row = pairs[i + 2];
-        dataArray.push({ Name: name, Code: code, Row: row });
+
+     // Function to start generating QR codes ////
+    function startGeneratingQR() {
+      google.script.run.withSuccessHandler(() => generateQR(counter)).doGet() ;
+      
+      data = "<?= data ?>";
+
+      // Split the input into an array
+      var pairs = data.split(',');
+
+      // Create an array of objects for Name and Code pairs
+
+      for (var i = 0; i < pairs.length; i += 4) {
+          var name = pairs[i];
+          var code = pairs[i + 1];
+          var row = pairs[i + 2];
+          var society = pairs[i + 3]
+          dataArray.push({ Name: name, Code: code, Row: row, Society: society });
+      }
     }
 
+    // Event listener for the "Generate QR Codes" button
+    document.getElementById("generateQRButton").addEventListener("click", startGeneratingQR);
+    
     function waitForCanvasToLoad(callback) {
           var interval = setInterval(function() {
               var canvasElement = document.querySelector("canvas");
@@ -53,7 +66,7 @@
       }
 
 
-    function generateQR() {
+    function generateQR() { ////
       $('#message').text("SAVING TO DRIVE AS "+dataArray[counter].Name);
       $('#canvas').css('border-color', 'red');
       $('#canvas').empty();
@@ -70,34 +83,28 @@
           errorCorrectionLevel: 'L'
         },
         cornersSquareOptions:{
-            type:"extra-rounded"
+            color: "#000000",
+            type: "extra-rounded"
         },
         cornersDotOptions:{
-            type:"dot"
+            color: "#000000",
+            type: "dot"
         },
         backgroundOptions: {
           color: "#ffffff",
         },
         imageOptions: {
           crossOrigin: "anonymous",
-          margin: 10
-        },
-        cornersSquareOptions:{
-            type:"extra-rounded",
-            color:"#000000"
-          },
-        // imageOptions:{
-        //     imageSize:0.6,
-        //     margin:0
-        //   }
+          margin: 20
+        }
       });
 
       qrCode.append(document.getElementById("canvas"));
       waitForCanvasToLoad(passQRToSave);
     }
 
-    function passQRToSave(canvasElement) {
-        qrSaves.push({Canvas: canvasElement, Name: dataArray[counter].Name, Row: dataArray[counter].Row});
+    function passQRToSave(canvasElement) { ////
+        qrSaves.push({Canvas: canvasElement, Name: dataArray[counter].Name, Row: dataArray[counter].Row, Society: dataArray[counter].Society});
         generateNextQR();
 
     }
@@ -108,10 +115,34 @@
         generateQR();
       } else {
         console.log(qrSaves);
-        var foldername = "QR Save 1";
-        google.script.run.saveToDrive(foldername, qrSaves);
+        var foldername = ["JPMA", "JFINEX", "HATS", "SYMA", "JPIA"];
+        // processBatches(foldername);
       }
     }
+    
+    // Define the maximum batch size
+    const maxBatchSize = 80;
+    let qrSavesIndex = 0; // Keep track of the current index
+
+    function processBatches(foldername) {
+      const batchSize = Math.min(maxBatchSize, qrSaves.length - qrSavesIndex);
+      const batch = qrSaves.slice(qrSavesIndex, qrSavesIndex + batchSize);
+
+      if (batch.length > 0) {
+        google.script.run
+          .withSuccessHandler(() => {
+            // Batch successfully processed
+            qrSavesIndex += batchSize; // Update the current index
+            processBatches(foldername); // Continue with the next batch
+          })
+          .saveToDrive(foldername, batch);
+      } else {
+        // All elements have been processed
+        console.log("All elements in qrSaves have been used.");
+        // generate all template
+      }
+    }
+
     </script>
 </body>
 </html>
